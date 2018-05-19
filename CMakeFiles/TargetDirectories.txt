@@ -1,0 +1,3 @@
+/home/barcik/Repositorios/FaceDetection/CMakeFiles/rebuild_cache.dir
+/home/barcik/Repositorios/FaceDetection/CMakeFiles/edit_cache.dir
+/home/barcik/Repositorios/FaceDetection/CMakeFiles/main.dir
