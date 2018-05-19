@@ -6,6 +6,24 @@
 
 #IncludeRegexTransform: 
 
+/home/barcik/Repositorios/BoostingDetection/lib/filter.hpp
+iostream
+-
+
+/home/barcik/Repositorios/BoostingDetection/lib/haar_filter.hpp
+filter.hpp
+/home/barcik/Repositorios/BoostingDetection/lib/filter.hpp
+opencv2/highgui/highgui.hpp
+-
+opencv/cv.hpp
+-
+opencv2/imgproc.hpp
+-
+iostream
+-
+vector
+-
+
 /home/barcik/Repositorios/BoostingDetection/lib/image.hpp
 iostream
 -
@@ -14,6 +32,18 @@ opencv2/highgui/highgui.hpp
 opencv/cv.hpp
 -
 opencv2/imgproc.hpp
+-
+
+/home/barcik/Repositorios/BoostingDetection/src/filter.cpp
+../lib/filter.hpp
+/home/barcik/Repositorios/BoostingDetection/lib/filter.hpp
+
+/home/barcik/Repositorios/BoostingDetection/src/haar_filter.cpp
+../lib/haar_filter.hpp
+/home/barcik/Repositorios/BoostingDetection/lib/haar_filter.hpp
+iostream
+-
+vector
 -
 
 /home/barcik/Repositorios/BoostingDetection/src/image.cpp
@@ -37,8 +67,10 @@ opencv/cv.hpp
 -
 opencv2/imgproc.hpp
 -
-./lib/image.hpp
-/home/barcik/Repositorios/BoostingDetection/src/./lib/image.hpp
+../lib/image.hpp
+/home/barcik/Repositorios/BoostingDetection/lib/image.hpp
+../lib/haar_filter.hpp
+/home/barcik/Repositorios/BoostingDetection/lib/haar_filter.hpp
 
 /usr/local/include/opencv/cv.h
 opencv2/core/core_c.h

@@ -2,7 +2,8 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv/cv.hpp>
 #include <opencv2/imgproc.hpp>
-#include "./lib/image.hpp"
+#include "../lib/image.hpp"
+#include "../lib/haar_filter.hpp"
 
 
 void print (int matrix[3][3]) {
@@ -72,8 +73,8 @@ void integral_transform (cv::Mat &image, cv::Mat &integral_image) {
         }
     }
 }
-/*
-void create_filters (cv::Mat &image, cv::Mat &integral_image, std::vector<Haar_Filter> &filters) {
+
+void create_filters (cv::Mat &image, cv::Mat &integral_image, std::vector<Haar_filter> &filters) {
     // parameters
     int const width = 8;
     int const height = 8;
@@ -89,9 +90,9 @@ void create_filters (cv::Mat &image, cv::Mat &integral_image, std::vector<Haar_F
                 for (int j = 0; j < max_width; j++) {
                     // filter out of the image
                     if (j + w > max_width - j || i + h > max_height - i)
-                        break;
+                        continue;
                     for (int type = 1; type <= 4; type++)
-                        // filters.push_back(new Haar_Filter(type, h, w, i, j));
+                        filters.push_back(Haar_filter(type, h, w, j, i));
                 }
 
             }
@@ -100,25 +101,12 @@ void create_filters (cv::Mat &image, cv::Mat &integral_image, std::vector<Haar_F
     }
 
 }
-*/
+
 
 int main () {
 
-    std::string image_name = "image_test.jpg";
+    std::string image_name = "../image_test.jpg";
     cv::Mat image = cv::imread(image_name);
-
-    /*
-    cv::Mat gray_image;
-    cvtColor(image, gray_image, CV_RGB2GRAY);
-
-    cv::imshow("color image", image);
-    cv::waitKey(0);
-    cv::imshow("grayscale image", gray_image);
-    cv::waitKey(0);
-
-    cv::Mat integral_image = Mat::zeros(gray_image.rows, gray_image.cols, CV_32F);
-    integral_transform(gray_image, integral_image);
-    */
 
     Image *img = new Image(image_name, image);
     cv::imshow("image", img->image);
@@ -127,6 +115,10 @@ int main () {
     cv::waitKey(0);
     cv::imshow("integral image", img->integral_image); 
     cv::waitKey(0);
+
+    std::vector<Haar_filter> filters;
+    create_filters(img->image, img->integral_image, filters);
+    std::cout << "haar filter vector with " << filters.size() << std::endl;
 
     return 0;
 }

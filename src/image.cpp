@@ -6,8 +6,9 @@
 
 Image::Image(std::string name, cv::Mat image) {
     this->name = name;
-    this->image = image;
-    cvtColor(image, gray_image, CV_RGB2GRAY);
+    this->image = image; 
+    cvtColor(this->image, this->gray_image, CV_RGB2GRAY);
+    this->integral_image = cv::Mat::zeros(gray_image.rows, gray_image.cols, CV_32F);
     create_integral_image();
 }
 

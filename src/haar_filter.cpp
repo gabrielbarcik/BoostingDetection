@@ -1,4 +1,4 @@
-#include "haar_filter.hpp"
+#include "../lib/haar_filter.hpp"
 #include <iostream>
 #include <vector>
 
@@ -101,7 +101,7 @@ int Haar_filter::feature(cv::Mat &integral_image){
 	Filter f = Filter(0,0,0,0,0); // just for initialization
 
 	for(int k = 0; k < this->black_filters.size(); k++){
-		filter = this->black_fs[k];
+		f = this->black_filters[k];
 		feature += integral_image.at<uchar>(f.i_min + f.height,f.j_min + f.width) 
 					- integral_image.at<uchar>(f.i_min + f.height,f.j_min)
 					- integral_image.at<uchar>(f.i_min,f.j_min + f.width)
@@ -110,7 +110,7 @@ int Haar_filter::feature(cv::Mat &integral_image){
 	}
 
 	for(int k = 0; k < this->white_filters.size(); k++){
-		f = this->white_fs[k];
+		f = this->white_filters[k];
 		feature -= integral_image.at<uchar>(f.i_min + f.height,f.j_min + f.width) 
 					- integral_image.at<uchar>(f.i_min + f.height,f.j_min)
 					- integral_image.at<uchar>(f.i_min,f.j_min + f.width)

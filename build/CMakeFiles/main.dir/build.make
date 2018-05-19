@@ -57,9 +57,35 @@ include CMakeFiles/main.dir/progress.make
 # Include the compile flags for this target's objects.
 include CMakeFiles/main.dir/flags.make
 
+CMakeFiles/main.dir/src/filter.cpp.o: CMakeFiles/main.dir/flags.make
+CMakeFiles/main.dir/src/filter.cpp.o: ../src/filter.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/barcik/Repositorios/BoostingDetection/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/main.dir/src/filter.cpp.o"
+	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/main.dir/src/filter.cpp.o -c /home/barcik/Repositorios/BoostingDetection/src/filter.cpp
+
+CMakeFiles/main.dir/src/filter.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/main.dir/src/filter.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/barcik/Repositorios/BoostingDetection/src/filter.cpp > CMakeFiles/main.dir/src/filter.cpp.i
+
+CMakeFiles/main.dir/src/filter.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/main.dir/src/filter.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/barcik/Repositorios/BoostingDetection/src/filter.cpp -o CMakeFiles/main.dir/src/filter.cpp.s
+
+CMakeFiles/main.dir/src/haar_filter.cpp.o: CMakeFiles/main.dir/flags.make
+CMakeFiles/main.dir/src/haar_filter.cpp.o: ../src/haar_filter.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/barcik/Repositorios/BoostingDetection/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/main.dir/src/haar_filter.cpp.o"
+	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/main.dir/src/haar_filter.cpp.o -c /home/barcik/Repositorios/BoostingDetection/src/haar_filter.cpp
+
+CMakeFiles/main.dir/src/haar_filter.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/main.dir/src/haar_filter.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/barcik/Repositorios/BoostingDetection/src/haar_filter.cpp > CMakeFiles/main.dir/src/haar_filter.cpp.i
+
+CMakeFiles/main.dir/src/haar_filter.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/main.dir/src/haar_filter.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/barcik/Repositorios/BoostingDetection/src/haar_filter.cpp -o CMakeFiles/main.dir/src/haar_filter.cpp.s
+
 CMakeFiles/main.dir/src/image.cpp.o: CMakeFiles/main.dir/flags.make
 CMakeFiles/main.dir/src/image.cpp.o: ../src/image.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/barcik/Repositorios/BoostingDetection/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/main.dir/src/image.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/barcik/Repositorios/BoostingDetection/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/main.dir/src/image.cpp.o"
 	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/main.dir/src/image.cpp.o -c /home/barcik/Repositorios/BoostingDetection/src/image.cpp
 
 CMakeFiles/main.dir/src/image.cpp.i: cmake_force
@@ -72,7 +98,7 @@ CMakeFiles/main.dir/src/image.cpp.s: cmake_force
 
 CMakeFiles/main.dir/src/main.cpp.o: CMakeFiles/main.dir/flags.make
 CMakeFiles/main.dir/src/main.cpp.o: ../src/main.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/barcik/Repositorios/BoostingDetection/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/main.dir/src/main.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/barcik/Repositorios/BoostingDetection/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/main.dir/src/main.cpp.o"
 	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/main.dir/src/main.cpp.o -c /home/barcik/Repositorios/BoostingDetection/src/main.cpp
 
 CMakeFiles/main.dir/src/main.cpp.i: cmake_force
@@ -85,12 +111,16 @@ CMakeFiles/main.dir/src/main.cpp.s: cmake_force
 
 # Object files for target main
 main_OBJECTS = \
+"CMakeFiles/main.dir/src/filter.cpp.o" \
+"CMakeFiles/main.dir/src/haar_filter.cpp.o" \
 "CMakeFiles/main.dir/src/image.cpp.o" \
 "CMakeFiles/main.dir/src/main.cpp.o"
 
 # External object files for target main
 main_EXTERNAL_OBJECTS =
 
+main: CMakeFiles/main.dir/src/filter.cpp.o
+main: CMakeFiles/main.dir/src/haar_filter.cpp.o
 main: CMakeFiles/main.dir/src/image.cpp.o
 main: CMakeFiles/main.dir/src/main.cpp.o
 main: CMakeFiles/main.dir/build.make
@@ -112,7 +142,7 @@ main: /usr/local/lib/libopencv_imgcodecs.so.3.2.0
 main: /usr/local/lib/libopencv_imgproc.so.3.2.0
 main: /usr/local/lib/libopencv_core.so.3.2.0
 main: CMakeFiles/main.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/barcik/Repositorios/BoostingDetection/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Linking CXX executable main"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/barcik/Repositorios/BoostingDetection/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Linking CXX executable main"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/main.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.

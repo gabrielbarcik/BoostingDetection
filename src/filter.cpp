@@ -1,4 +1,4 @@
-#include "filter.hpp"
+#include "../lib/filter.hpp"
 
 Filter::Filter(int height, int width, int j_min, int i_min, int color){
 	this->height = height;

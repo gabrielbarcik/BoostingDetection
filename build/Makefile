@@ -123,6 +123,60 @@ main/fast:
 	$(MAKE) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/build
 .PHONY : main/fast
 
+src/filter.o: src/filter.cpp.o
+
+.PHONY : src/filter.o
+
+# target to build an object file
+src/filter.cpp.o:
+	$(MAKE) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/filter.cpp.o
+.PHONY : src/filter.cpp.o
+
+src/filter.i: src/filter.cpp.i
+
+.PHONY : src/filter.i
+
+# target to preprocess a source file
+src/filter.cpp.i:
+	$(MAKE) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/filter.cpp.i
+.PHONY : src/filter.cpp.i
+
+src/filter.s: src/filter.cpp.s
+
+.PHONY : src/filter.s
+
+# target to generate assembly for a file
+src/filter.cpp.s:
+	$(MAKE) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/filter.cpp.s
+.PHONY : src/filter.cpp.s
+
+src/haar_filter.o: src/haar_filter.cpp.o
+
+.PHONY : src/haar_filter.o
+
+# target to build an object file
+src/haar_filter.cpp.o:
+	$(MAKE) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/haar_filter.cpp.o
+.PHONY : src/haar_filter.cpp.o
+
+src/haar_filter.i: src/haar_filter.cpp.i
+
+.PHONY : src/haar_filter.i
+
+# target to preprocess a source file
+src/haar_filter.cpp.i:
+	$(MAKE) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/haar_filter.cpp.i
+.PHONY : src/haar_filter.cpp.i
+
+src/haar_filter.s: src/haar_filter.cpp.s
+
+.PHONY : src/haar_filter.s
+
+# target to generate assembly for a file
+src/haar_filter.cpp.s:
+	$(MAKE) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/haar_filter.cpp.s
+.PHONY : src/haar_filter.cpp.s
+
 src/image.o: src/image.cpp.o
 
 .PHONY : src/image.o
@@ -186,6 +240,12 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... edit_cache"
 	@echo "... main"
+	@echo "... src/filter.o"
+	@echo "... src/filter.i"
+	@echo "... src/filter.s"
+	@echo "... src/haar_filter.o"
+	@echo "... src/haar_filter.i"
+	@echo "... src/haar_filter.s"
 	@echo "... src/image.o"
 	@echo "... src/image.i"
 	@echo "... src/image.s"
