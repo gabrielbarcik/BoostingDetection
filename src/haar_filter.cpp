@@ -117,5 +117,5 @@ int Haar_filter::feature(cv::Mat &integral_image){
 					+ integral_image.at<uchar>(f.i_min,f.j_min);
 	}
 
-	return feature; // TODO: make this function
+	return feature;
 }

@@ -64,7 +64,7 @@ public:
 	std::vector<Filter> black_filters;
 private:
 	
-	
+
 };
 
 #endif

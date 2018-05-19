@@ -120,5 +120,14 @@ int main () {
     create_filters(img->image, img->integral_image, filters);
     std::cout << "haar filter vector with " << filters.size() << std::endl;
 
+    std::vector<int> features;
+    for (int i = 0; i < filters.size(); i++) {
+        features.push_back(filters[i].feature(img->integral_image));
+    }
+
+    for (int i = 0; i < 10; i++) {
+        std::cout << features[i] << std::endl;
+    }
+
     return 0;
 }
