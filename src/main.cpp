@@ -4,7 +4,13 @@
 #include <opencv2/imgproc.hpp>
 #include "../lib/image.hpp"
 #include "../lib/haar_filter.hpp"
+#include "../lib/classifier.hpp"
 
+#include <stdio.h>
+#include <sys/types.h>
+#include <dirent.h>
+
+#include <string>
 
 void print (int matrix[3][3]) {
     for (int i = 0; i < 3; i++) {
@@ -102,32 +108,91 @@ void create_filters (cv::Mat &image, cv::Mat &integral_image, std::vector<Haar_f
 
 }
 
+// calculate the number of files of a folder with path folder_name
+int number_of_files(std::string folder_name){
+    DIR *dp;
+    int num_files = -2; // starts at -2 because readdir takes "." and ".." as a file.
+    struct dirent *ep;
+
+    const char * c = folder_name.c_str();
+    dp = opendir (c);
+
+    if (dp != NULL) {
+        while (ep = readdir (dp)){
+          num_files++;
+          std::cout << "file name: " << ep->d_name << std::endl;
+        }
+
+        (void) closedir (dp);
+    } else
+        perror ("Couldn't open the directory");
+
+    return num_files;
+}
+
+
+/* funcion used in calculate_features to find randomly a image in the learning base and calculate
+    it`s features and modify ck. ck = 1 if the image has a visage and -1 if not.
+*/
+Image find_random_image_learning (int &ck, std::vector<int> features){
+    double r = ((double) rand() / (RAND_MAX));
+    std::string image_path = "";
+
+    if(r < 0.5){
+        ck = -1;
+        std::string image_path = "neg/";
+        srand((unsigned)time(NULL));
+        r = (rand()%(number_of_files(image_path)-1)) + 1;
+
+        image_path = "neg/im" + std::to_string(r) + ".jpg";
+        
+    } else {
+        ck = 1;
+        std::string image_path = "pos/";
+        r = (rand()%(number_of_files(image_path)-1)) + 1;
+        image_path = "pos/im" + std::to_string(r) + ".jpg";
+    }
+    // TODO: pegar as features da imagem
+    //features = 
+
+    cv::Mat image = cv::imread(image_path);
+
+    Image img = Image(image_path, image);
+
+    return img;
+}
+
+void calculate_features(std::vector<Classifier> &classifiers){
+    int K = 4; // TODO: evaluate the right value for K
+    double epsilon = 0.005; // TODO: evaluate the right value for epsilon
+    std::vector<int> features;
+
+    for(int k = 1, ck; k <= K; k++){
+        
+        Image imgage = find_random_image_learning(ck, features); 
+                                                            
+        classifiers = std::vector<Classifier>(features.size());
+        for(unsigned long i = 0, Xki, h; i < features.size(); i++){
+            
+            Xki = features[i]; 
+            if (classifiers[i].w1 * Xki + classifiers[i].w2 >= 0)
+                h = 1;
+            else h = -1;
+            classifiers[i].w1 -= epsilon * (h - ck) * Xki;
+            classifiers[i].w2 -= epsilon * (h - ck);
+        }
+        features.clear();
+    }
+
+    return classifiers;
+}
+
+
 
 int main () {
+    std::vector<Classifier> classifiers;
 
-    std::string image_name = "../image_test.jpg";
-    cv::Mat image = cv::imread(image_name);
-
-    Image *img = new Image(image_name, image);
-    cv::imshow("image", img->image);
-    cv::waitKey(0);
-    cv::imshow("gray image", img->gray_image);
-    cv::waitKey(0);
-    cv::imshow("integral image", img->integral_image); 
-    cv::waitKey(0);
-
-    std::vector<Haar_filter> filters;
-    create_filters(img->image, img->integral_image, filters);
-    std::cout << "haar filter vector with " << filters.size() << std::endl;
-
-    std::vector<int> features;
-    for (int i = 0; i < filters.size(); i++) {
-        features.push_back(filters[i].feature(img->integral_image));
-    }
-
-    for (int i = 0; i < 10; i++) {
-        std::cout << features[i] << std::endl;
-    }
+    calculate_features(classifiers);
 
     return 0;
 }

@@ -16,7 +16,7 @@ public:
 	Haar_filter(int type, int height, int width, int j_min, int i_min);
 
 	bool contains (int j, int i); 
-	int feature(cv::Mat &integral_image); // TODO: create the function to calculate the feature
+	int feature(cv::Mat &integral_image);
 
 	int type;
 	/*  ----> j  (width)
