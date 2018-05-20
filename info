@@ -1,0 +1,14 @@
+Details about the computer (salle machine)
+
+command: grep 'processor.*:' /proc/cpuinfo | wc -l
+8 processors
+
+command: df -h `pwd`
+				    size  used  avail use% mounted on
+alpha.polytechnique.fr:/vol/eleves  2,0T  413G  1,6T  21% /users/eleves-a
+
+grep "MemTotal:" /proc/meminfo
+32 GB de RAM
+
+Strategy 1. Decrease the amount of data transmitted
+
