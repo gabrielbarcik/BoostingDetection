@@ -1,3 +1,0 @@
-/home/matheus/X/Periodo 4/INF442-BigData/Project/BoostingDetection/build/CMakeFiles/rebuild_cache.dir
-/home/matheus/X/Periodo 4/INF442-BigData/Project/BoostingDetection/build/CMakeFiles/edit_cache.dir
-/home/matheus/X/Periodo 4/INF442-BigData/Project/BoostingDetection/build/CMakeFiles/main.dir

@@ -164,7 +164,6 @@ void find_random_image_learning (int &ck, std::vector<int> &features, std::vecto
     cv::Mat image = cv::imread(image_path);
     Image img = Image(image_path, image);
 
-
     for (unsigned long i = 0; i < filters.size(); i++) {
         features.push_back(filters[i].feature(img.integral_image));
     }
@@ -172,14 +171,14 @@ void find_random_image_learning (int &ck, std::vector<int> &features, std::vecto
 
 void train_model(std::vector<Classifier> &classifiers, std::vector<Haar_filter> &filters){
     int K = 4; // TODO: evaluate the right value for K
-    double epsilon = 0.1; // TODO: evaluate the right value for epsilon
+    double epsilon = 0.01; // TODO: evaluate the right value for epsilon
     std::vector<int> features;
+    long Xki, h;
 
     for(int k = 1, ck; k <= K; k++){
         find_random_image_learning(ck, features, filters, classifiers); 
-        
-
-        for(unsigned long i = 0, Xki, h; i < features.size(); i++){
+    
+        for(unsigned long i = 0; i < features.size(); i++){
             Xki = features[i];
 
             if (classifiers[i].w1 * Xki + classifiers[i].w2 >= 0.0)
@@ -188,9 +187,6 @@ void train_model(std::vector<Classifier> &classifiers, std::vector<Haar_filter> 
             	h = -1;
             classifiers[i].w1 -= epsilon * (h - ck) * Xki;
             classifiers[i].w2 -= epsilon * (h - ck);
-
-            int a = h - ck;
-            std::cout << a << std::endl;
         }
         features.clear();
     }
@@ -216,10 +212,6 @@ int main () {
     std::vector<Classifier> classifiers = initialize_classifier_vector(filters.size());
     train_model(classifiers, filters);
 
-
-    for (int i = 0; i < 10; i++) {
-        std::cout << classifiers[i].w2 << std::endl;
-    }
-
     return 0;
+    
 }
