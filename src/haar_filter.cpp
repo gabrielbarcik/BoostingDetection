@@ -98,7 +98,7 @@ bool Haar_filter::contains(int j, int i){
 
 int Haar_filter::feature(cv::Mat &integral_image){
 	int feature = 0;
-	Filter f = Filter(0,0,0,0,0); // just for initialization
+	Filter f = Filter(1, 0, 0, 0, 0);
 
 	for(int k = 0; k < this->black_filters.size(); k++){
 		f = this->black_filters[k];
