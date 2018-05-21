@@ -158,7 +158,7 @@ void find_random_image_learning (int &ck, std::vector<int> features, std::vector
 
     for (unsigned long i = 0; i < filters.size(); i++) {
         features.push_back(filters[i].feature(img.integral_image));
-        classifiers.push_back(Classifier()) // TODO
+        classifiers.push_back(Classifier()); // TODO
     }
 }
 
