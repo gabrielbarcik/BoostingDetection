@@ -14,11 +14,13 @@ class Haar_filter {
 public:
 
 	Haar_filter(int type, int height, int width, int j_min, int i_min);
-
+	
+	// methods
 	bool contains (int j, int i); 
 	int feature(cv::Mat &integral_image);
-
+	// attributes
 	int type;
+	
 	/*  ----> j  (width)
 		|
 (height)|

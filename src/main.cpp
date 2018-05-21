@@ -80,7 +80,7 @@ void integral_transform (cv::Mat &image, cv::Mat &integral_image) {
     }
 }
 
-void create_filters (cv::Mat &image, cv::Mat &integral_image, std::vector<Haar_filter> &filters) {
+void create_filters (std::vector<Haar_filter> &filters) {
     // parameters
     int const width = 8;
     int const height = 8;
@@ -134,7 +134,7 @@ int number_of_files(std::string folder_name){
 /* funcion used in calculate_features to find randomly a image in the learning base and calculate
     it`s features and modify ck. ck = 1 if the image has a visage and -1 if not.
 */
-Image find_random_image_learning (int &ck, std::vector<int> features){
+void find_random_image_learning (int &ck, std::vector<int> features, std::vector<Haar_filter> &filters, std::vector<Classifier> &classifiers){
     double r = ((double) rand() / (RAND_MAX));
     std::string image_path = "";
 
@@ -143,39 +143,37 @@ Image find_random_image_learning (int &ck, std::vector<int> features){
         std::string image_path = "neg/";
         srand((unsigned)time(NULL));
         r = (rand()%(number_of_files(image_path)-1)) + 1;
-
         image_path = "neg/im" + std::to_string(r) + ".jpg";
         
     } else {
         ck = 1;
         std::string image_path = "pos/";
+        srand((unsigned)time(NULL));
         r = (rand()%(number_of_files(image_path)-1)) + 1;
         image_path = "pos/im" + std::to_string(r) + ".jpg";
     }
-    // TODO: pegar as features da imagem
-    //features = 
 
     cv::Mat image = cv::imread(image_path);
-
     Image img = Image(image_path, image);
 
-    return img;
+    for (unsigned long i = 0; i < filters.size(); i++) {
+        features.push_back(filters[i].feature(img.integral_image));
+        classifiers.push_back(Classifier()) // TODO
+    }
 }
 
-void calculate_features(std::vector<Classifier> &classifiers){
+void train_model(std::vector<Classifier> &classifiers, std::vector<Haar_filter> &filters){
     int K = 4; // TODO: evaluate the right value for K
     double epsilon = 0.005; // TODO: evaluate the right value for epsilon
     std::vector<int> features;
 
     for(int k = 1, ck; k <= K; k++){
         
-        Image imgage = find_random_image_learning(ck, features); 
-                                                            
-        classifiers = std::vector<Classifier>(features.size());
+        find_random_image_learning(ck, features, filters, classifiers); 
+
         for(unsigned long i = 0, Xki, h; i < features.size(); i++){
-            
             Xki = features[i]; 
-            if (classifiers[i].w1 * Xki + classifiers[i].w2 >= 0)
+            if (classifiers[i].w1 * Xki + classifiers[i].w2 >= 0.0)
                 h = 1;
             else h = -1;
             classifiers[i].w1 -= epsilon * (h - ck) * Xki;
@@ -183,16 +181,25 @@ void calculate_features(std::vector<Classifier> &classifiers){
         }
         features.clear();
     }
-
-    return classifiers;
 }
 
 
 
 int main () {
-    std::vector<Classifier> classifiers;
 
-    calculate_features(classifiers);
+    // create haar filters
+    std::vector<Haar_filter> filters;
+    create_filters(filters);
+
+    // training Model
+    std::vector<Classifier> classifiers;
+    train_model(classifiers, filters);
+
+    //std::cout << "classifier size" << classifiers.size() << std::endl;
+
+    /*for (int i = 0; i < 10; i++) {
+        std::cout << (double)classifiers[i].w1 << std::endl;
+    }*/
 
     return 0;
 }

@@ -1,7 +1,6 @@
-#include "studio.h"
-#include <stdlib.h>
-#include <mpi.h>
 
+
+/*
 int main (int argc, char *argv[]) {
 
     int id, nthreads;
@@ -22,10 +21,11 @@ int main (int argc, char *argv[]) {
     time_currrent = MPI_Wtime();
     time = time_current - time_initial;
 
-    printf("hello MPI user: from process = %i ono machine %s, of NCPU=%i process \n", 
+    // printf("hello MPI user: from process = %i ono machine %s, of NCPU=%i process \n", 
     id, cpu_name, nthreads);
 
     MPI_Finalize();
 
     return 0;
-}
+} 
+*/
