@@ -3,7 +3,6 @@
 #include "../lib/haar_filter.hpp"
 
 #include <vector>
-#include <string>
 
 #include <stdio.h>
 #include <sys/types.h>
