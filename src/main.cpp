@@ -146,21 +146,26 @@ void find_random_image_learning (int NUMBER_FILES_POS, int NUMBER_FILES_NEG, int
     if(r < 0.5){
         ck = -1;
         image_path = "neg/";
+        // image_path = "/users/eleves-a/2017/gabriel.fedrigo-barcik/BoostingDetection/build/neg/";
         srand((unsigned)time(NULL));
         r = (rand()%(NUMBER_FILES_NEG)) + 1.0;
         r_int = (int) r;
 
         image_path = "neg/im" + std::to_string(r_int) + ".jpg";
+        // image_path = "/users/eleves-a/2017/gabriel.fedrigo-barcik/BoostingDetection/build/neg/" + std::to_string(r_int) + ".jpg";
         // std::cout << image_path << std::endl;
         
     } else {
         ck = 1;
         image_path = "pos/";
+        // image_path = "/users/eleves-a/2017/gabriel.fedrigo-barcik/BoostingDetection/build/pos/";
         srand((unsigned)time(NULL));
         r = (rand()%(NUMBER_FILES_POS)) + 1.0;
         r_int = (int) r;
 
         image_path = "pos/im" + std::to_string(r_int) + ".jpg";
+        // image_path = "/users/eleves-a/2017/gabriel.fedrigo-barcik/BoostingDetection/build/pos/" + std::to_string(r_int) + ".jpg";
+  
         // std::cout << image_path << std::endl;
     }
 
@@ -189,7 +194,9 @@ void train_model(std::vector<Classifier> &classifiers, std::vector<Haar_filter> 
     std::vector<int> features;
     long Xki, h;
     int NUMBER_FILES_POS = number_of_files("pos/");
+    // int NUMBER_FILES_POS = number_of_files("/users/eleves-a/2017/gabriel.fedrigo-barcik/BoostingDetection/build/pos/");
     int NUMBER_FILES_NEG = number_of_files("neg/");
+    // int NUMBER_FILES_POS = number_of_files("/users/eleves-a/2017/gabriel.fedrigo-barcik/BoostingDetection/build/neg/");
 
     for(int k = 1, ck; k <= K; k++){
         auto start_random = std::chrono::high_resolution_clock::now();
