@@ -11,6 +11,7 @@ public:
 
 	double w1, w2;
 	Classifier(void);
+	Classifier(double w1, double w2);
 
 private:
 

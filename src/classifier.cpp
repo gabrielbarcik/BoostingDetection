@@ -12,3 +12,8 @@ Classifier::Classifier(){
 	this->w1 = 1.0;
 	this->w2 = 0.0;
 }
+
+Classifier::Classifier(double w1, double w2){
+	this->w1 = w1;
+	this->w2 = w2;
+}
