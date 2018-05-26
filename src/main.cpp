@@ -67,54 +67,6 @@ int number_of_files(std::string folder_name) {
     return num_files;
 }
 
-
-/* funcion used in calculate_features to find randomly a image in the learning base and calculate
-    it`s features and modify ck. ck = 1 if the image has a visage and -1 if not.
-*/
-void find_random_image_learning (int NUMBER_FILES_POS, int NUMBER_FILES_NEG, int &ck, std::vector<int> &features, std::vector<Haar_filter> &filters, std::vector<Classifier> &classifiers){
-    double r = ((double) rand() / (RAND_MAX));
-    int r_int = 1;
-    std::string image_path;
-
-    if(r < 0.5){
-        ck = -1;
-        image_path = "neg/";
-        // image_path = "/users/eleves-a/2017/gabriel.fedrigo-barcik/BoostingDetection/build/neg/";
-        srand((unsigned)time(NULL));
-        r = (rand()%(NUMBER_FILES_NEG)) + 1.0;
-        r_int = (int) r;
-
-        image_path = "neg/im" + std::to_string(r_int) + ".jpg";
-        // image_path = "/users/eleves-a/2017/gabriel.fedrigo-barcik/BoostingDetection/build/neg/im" + std::to_string(r_int) + ".jpg";
-        // std::cout << image_path << std::endl;
-        
-    } else {
-        ck = 1;
-        image_path = "pos/";
-        // image_path = "/users/eleves-a/2017/gabriel.fedrigo-barcik/BoostingDetection/build/pos/";
-        srand((unsigned)time(NULL));
-        r = (rand()%(NUMBER_FILES_POS)) + 1.0;
-        r_int = (int) r;
-
-        image_path = "pos/im" + std::to_string(r_int) + ".jpg";
-        // image_path = "/users/eleves-a/2017/gabriel.fedrigo-barcik/BoostingDetection/build/pos/im" + std::to_string(r_int) + ".jpg";
-  
-        // std::cout << image_path << std::endl;
-    }
-
-    cv::Mat image = cv::imread(image_path);
-    Image img = Image(image_path, image);
-
-    auto start_feature = std::chrono::high_resolution_clock::now();
-    for (unsigned long i = 0; i < filters.size(); i++) {
-        features.push_back(filters[i].feature(img.integral_image));
-    }
-    auto finish_feature = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed_feature = finish_feature - start_feature;
-    std::cout << "Elapsed Time (Calculate Feature): " << elapsed_feature.count() << std::endl;
-}
-
-
 void generate_random_vectors(int* random_img, int* cks, int K) {
     // int NUMBER_FILES_POS = number_of_files("/users/eleves-a/2017/gabriel.fedrigo-barcik/BoostingDetection/build/pos/");
     int NUMBER_FILES_POS = number_of_files("/usr/local/INF442-2018/P5/app/pos/");
@@ -187,36 +139,6 @@ int classifier_h_of_a_feature_mpi (double w1, double w2, int feature) {
 		return 1;
 	else 
 		return -1;
-}
-
-void train_model(std::vector<Classifier> &classifiers, std::vector<Haar_filter> &filters){
-    int K = 4; // TODO: evaluate the right value for K
-    double epsilon = 0.01; // TODO: evaluate the right value for epsilon
-    std::vector<int> features;
-    long Xki, h;
-    int NUMBER_FILES_POS = number_of_files("pos/");
-    // int NUMBER_FILES_POS = number_of_files("/users/eleves-a/2017/gabriel.fedrigo-barcik/BoostingDetection/build/pos/");
-    int NUMBER_FILES_NEG = number_of_files("neg/");
-    // int NUMBER_FILES_POS = number_of_files("/users/eleves-a/2017/gabriel.fedrigo-barcik/BoostingDetection/build/neg/");
-
-    for(int k = 1, ck; k <= K; k++){
-        auto start_random = std::chrono::high_resolution_clock::now();
-        find_random_image_learning(NUMBER_FILES_POS, NUMBER_FILES_NEG, ck, features, filters, classifiers); 
-        auto finish_random = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double> elapsed_random = finish_random - start_random;
-
-        auto start_classify = std::chrono::high_resolution_clock::now();
-        for(unsigned long i = 0; i < features.size(); i++){
-            Xki = features[i];
-
-            h = classifier_h_of_a_feature(classifiers[i], features[i]);
-            classifiers[i].w1 -= epsilon * (h - ck) * Xki;
-            classifiers[i].w2 -= epsilon * (h - ck);
-        }
-        auto finish_classify = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double> elapsed_classify = finish_classify - start_classify;
-        features.clear();
-    }
 }
 
 void train_model_mpi(int K, int* random_img, int* cks, double* classifiers_w1, double* classifiers_w2, int rank, int world_size, int classifiers_size, std::vector<Haar_filter> &filters){
@@ -335,68 +257,146 @@ void initialize_F(std::vector<Classifier> &classifiers_result_F, int size){
 	}
 }
 
+void initialize_images_dev (std::vector<Image> &images){
+    int NUMBER_FILES_POS = number_of_files("/usr/local/INF442-2018/P5/dev/pos");
+    int NUMBER_FILES_NEG = number_of_files("/usr/local/INF442-2018/P5/dev/neg");
+
+    std::string image_path;
+    cv::Mat image;
+
+    for(int i = 0; i < NUMBER_FILES_NEG; i++){
+        image_path = "/usr/local/INF442-2018/P5/dev/neg/im" + std::to_string(i) + ".jpg";
+        image = cv::imread(image_path);
+        images.push_back(Image(image_path, image));
+    }
+       
+    for(int i = 0; i < NUMBER_FILES_POS; i++){
+        image_path = "/usr/local/INF442-2018/P5/dev/pos/im" + std::to_string(i) + ".jpg";
+        image = cv::imread(image_path);
+        images.push_back(Image(image_path, image));
+    }
+}
+
+void initialize_c_dev(std::vector<int> &c, int n){
+
+    int NUMBER_FILES_POS = number_of_files("/usr/local/INF442-2018/P5/dev/pos");
+    int NUMBER_FILES_NEG = number_of_files("/usr/local/INF442-2018/P5/dev/neg");
+
+    for(int i = 0; i < n; i++){
+        if (i < NUMBER_FILES_NEG)
+            c.push_back(-1);
+        else
+            c.push_back(1);
+    }
+}
+
+void initialize_feature_i_dev(std::vector<int> &feature_i, int n){
+    for(int i = 0; i < n; i++){
+        feature_i.push_back(0);
+    }
+}
+
+void calculate_feature_i(std::vector<Image> &images, std::vector<int> &feature_i, 
+                         std::vector<Haar_filter> &filters, int feature_number){
+    for(int pos_img = 0; pos_img < images.size(); pos_img++){
+        feature_i[pos_img] = filters[feature_number].feature(images[pos_img].integral_image);
+    }
+
+}
+
+void update_weight(std::vector<double> &weights_lambda, Classifier best_h, 
+                    std::vector<Classifier> &classifiers, std::vector<Image> &images, 
+                    std::vector<int> &feature_i, std::vector<Haar_filter> &filters, 
+                    int i_minimisator, std::vector<int> &c, double alfa) {
+    double sum = 0.0;
+    calculate_feature_i(images, feature_i, filters, i_minimisator);
+    // update weights
+    for(int j = 0; j < images.size(); j++){
+
+        weights_lambda[j] *= exp(-c[j]*alfa*classifier_h_of_a_feature(best_h, feature_i[j]));
+        sum += weights_lambda[j];
+    }
+
+    // normalization
+    for(int i = 0; i < weights_lambda.size(); i++){
+        weights_lambda[i] /= sum;
+    }
+}
+
 void boosting_classifiers(std::vector<Classifier> &classifiers, std::vector<Haar_filter> &filters,
 									std::vector<Classifier> &final_classifier){
-	int NUMBER_FILES_POS = number_of_files("dev/neg");
-    int NUMBER_FILES_NEG = number_of_files("dev/pos");
-
-    int n = NUMBER_FILES_POS + NUMBER_FILES_NEG;
 
 
-    /*std::vector<double> weights_lambda;
-    initialize_weights(weights_lambda, n);
+    
+    // double teta = 0.789; // TODO: evaluete a good number for teta
+    
+
+    //TODO: calcula pra uma features i, um vetor e vou escrever em cima dele
+    // std::vector<int> feature_i -> feature_i[k] = filters[i].calculate_feature(images[k].integral_image)
+
+	// std::vector< std::vector<int> > features_of_images;
+    std::vector<double> weights_lambda;
+	std::vector<int> c; // c[i] = 1 if the image is a face and -1 if it is not.
+    std::vector<Image> images; // a vector of all images in dev/pos and dev/neg
+    std::vector<int> feature_i;
 
     initialize_F(final_classifier, classifiers.size());
-    double teta = 0.789; // TODO: evaluete a good number for teta
-    int num_interaction_N = 1000; // TODO: evaluete a good number for N
+    initialize_images_dev(images);
+    initialize_weights(weights_lambda, images.size());
+    initialize_c_dev(c, images.size());
+    initialize_feature_i_dev(feature_i, images.size());
 
-	std::vector< std::vector<int> > features_of_images;
-	std::vector<int> c;
-	calculate_features_of_all_images(features_of_images, c, filters, NUMBER_FILES_POS, NUMBER_FILES_NEG);
+    int num_images = images.size(); // n is the total number of images
+    int features_size = filters.size(); // features_size is the total number of features of a image 92 x 112
 
 	// find best h_i
-	double epsilon_i, epsilon_min = DBL_MAX, alfa;
-	Classifier best_h;
-	int i_minimisator;
+	double epsilon_i; // one of the epsilons evalueted
+    double epsilon_min; // the smalest epsilon evalueted
+    double alfa; // alfa(k) = ln ((1 - episilon(k))/k) / 2
+	Classifier best_h; // is the classifier that minimises the erreur (epsilon)
+	int i_minimisator; // the positions of the features that minimizes the erreur
+    int num_interaction_N = 1; // TODO: evaluete a good number for N
+
 
 	for(int k = 0; k < num_interaction_N; k++) {
+        epsilon_min = DBL_MAX;
+        
+        for(int i = features_size-2; i < features_size; i++){
+            epsilon_i = 0.0;
+            std::cout << "here k = " << k << "/" << num_interaction_N << " | i = " << i << std::endl;
+            calculate_feature_i(images, feature_i, filters, i);
+            for(int j = 0; j < num_images; j++){
+                epsilon_i += weights_lambda[j]*function_of_error_E(
+                    classifier_h_of_a_feature(classifiers[i], feature_i[j]),
+                    c[j]);
+            }
 
-		epsilon_min = DBL_MAX;
-		for(int i = 0; i < features_of_images.size(); i++) { 
-			epsilon_i = 0.0;
-			for(int j = 0; j < n; j++){
-				epsilon_i += weights_lambda[j]*function_of_error_E(
-					classifier_h_of_a_feature(classifiers[i], features_of_images[j][i]),
-					c[j]);
-			}
+            if(epsilon_i < epsilon_min){
+                epsilon_min = epsilon_i;
+                best_h = classifiers[i];
+                i_minimisator = i;
+            }
 
-			if(epsilon_i < epsilon_min){
-				epsilon_min = epsilon_i;
-				best_h = classifiers[i];
-				i_minimisator = i;
-			}
-		}
+        }
+
+
+		std::cout << "epsilon_min = " << epsilon_min << " | i_minimisator = " << i_minimisator << std::endl;
 
 		alfa = log((1.0-epsilon_min)/epsilon_min)/2;
 		final_classifier[i_minimisator].w1 += alfa*best_h.w1;
 		final_classifier[i_minimisator].w2 += alfa*best_h.w2;
-
-		update_weight(weights_lambda, best_h, classifiers, features_of_images, i_minimisator, c, alfa);	
+        std::cout << "debug1" << std::endl;
+		update_weight(weights_lambda, best_h, classifiers, images, feature_i, filters, i_minimisator, c, alfa);	
+        std::cout << "debug2" << std::endl;
 	}
 
 	weights_lambda.clear();
 	int size = filters.size();
-
-	for(int i = 0; i < size; i++){
-		features_of_images[i].clear();
-	}
-
-	features_of_images.clear();*/
 }
 
 int main (int argc, char* argv[]) {
     // PARAMETERS
-    int K = 1000; // TODO: evaluate the right value for K
+    int K = 4; // TODO: evaluate the right value for K
     
     const int root = 0;
     int rank, world_size;
@@ -436,6 +436,8 @@ int main (int argc, char* argv[]) {
     int* cks = new int[K]; // gives the origin of this image
     double* global_classifier_w1;
     double* global_classifier_w2;
+
+    std::vector<Classifier> classifiers(filters.size());
 
     if (rank == root) {
         global_classifier_w1 = new double[NUM_CLASSIFIERS];
@@ -486,12 +488,23 @@ int main (int argc, char* argv[]) {
     if (rank == root)
         std::cout << "Elapsed Time (Training): " << elapsed_training.count() << std::endl;
 
-    // std::cout << "filters size: " << filters.size() << std::endl;
-    // std::cout << "classifers size: " << classifiers.size() << std::endl;
+
+    // ********************************************************************************************************************************************************
+    // TODO PARALELIZAR ABAIXO
+
+    auto start_boosting = std::chrono::high_resolution_clock::now();
 
     // Boosting des classifieurs faibles (Ex 2.2)
-    // std::vector<Classifier> final_classifier;
-    // boosting_classifiers(classifiers, filters, final_classifier);
+    std::vector<Classifier> final_classifier;
+    boosting_classifiers(classifiers, filters, final_classifier);
+
+    auto finish_boosting = std::chrono::high_resolution_clock::now();
+
+    std::chrono::duration<double> elapsed_boosting = finish_boosting - start_boosting;
+
+    std::cout << "Elapsed Time (Boosting): " << elapsed_boosting.count() << std::endl;    
+
+
 
     //TODO: lembrar de deletar todos os vetores
 
