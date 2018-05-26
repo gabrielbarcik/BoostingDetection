@@ -18,73 +18,6 @@
 
 #include <mpi.h> 
 
-void print (int matrix[3][3]) {
-    for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
-            std::cout << matrix[i][j] << " ";
-        }
-        std::cout << std::endl;
-    }
-    std::cout << std::endl;
-}
-
-void matrix_integral () {
-    int matrix[3][3];
-    int integral[3][3];
-    int cumulative_row = 0;
-
-    // matrix creation
-    int counter = 0;
-    for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
-            matrix[i][j] = ++counter;
-        }
-    }
-
-    // first element -> trivial initialization
-    integral[0][0] = matrix[0][0];
-    // first line -> image[-1][y] = 0 for all y
-    cumulative_row = matrix[0][0];
-    for (int j = 1; j < 3; j++) {
-        integral[0][j] = cumulative_row + matrix[0][j];
-        cumulative_row += matrix[0][j];
-    }
-
-    for (int i = 1; i < 3; i++) {
-        cumulative_row = 0;
-        for (int j = 0; j < 3; j++) {
-            cumulative_row += matrix[i][j];
-            integral[i][j] = integral[i-1][j] + cumulative_row;
-        }
-    }
-
-    print(matrix);
-    print(integral);
-}
-
-void integral_transform (cv::Mat &image, cv::Mat &integral_image) {
-
-    int cumulative_row = 0;
-
-    // first element, trivial initialization
-    integral_image.at<uchar>(0, 0) = image.at<uchar>(0, 0);
-
-    // first line -> image[-1][y] = 0 for all y
-    cumulative_row = image.at<uchar>(0, 0);
-    for (int j = 1; j < image.cols; j++) {
-        integral_image.at<uchar>(0, j) = cumulative_row + image.at<uchar>(0, j);
-        cumulative_row += image.at<uchar>(0, j);
-    }
-
-    // all the rest of the matrix
-    for (int i = 1; i < image.rows; i++) {
-        cumulative_row = 0;
-        for (int j = 0; j < image.cols; j++) {
-            cumulative_row += image.at<uchar>(i, j);
-            integral_image.at<uchar>(i, j) = integral_image.at<uchar>(i-1, j) + cumulative_row;
-        }
-    }
-}
 
 void create_filters (std::vector<Haar_filter> &filters) {
     // parameters
@@ -152,7 +85,7 @@ void find_random_image_learning (int NUMBER_FILES_POS, int NUMBER_FILES_NEG, int
         r_int = (int) r;
 
         image_path = "neg/im" + std::to_string(r_int) + ".jpg";
-        // image_path = "/users/eleves-a/2017/gabriel.fedrigo-barcik/BoostingDetection/build/neg/" + std::to_string(r_int) + ".jpg";
+        // image_path = "/users/eleves-a/2017/gabriel.fedrigo-barcik/BoostingDetection/build/neg/im" + std::to_string(r_int) + ".jpg";
         // std::cout << image_path << std::endl;
         
     } else {
@@ -164,7 +97,7 @@ void find_random_image_learning (int NUMBER_FILES_POS, int NUMBER_FILES_NEG, int
         r_int = (int) r;
 
         image_path = "pos/im" + std::to_string(r_int) + ".jpg";
-        // image_path = "/users/eleves-a/2017/gabriel.fedrigo-barcik/BoostingDetection/build/pos/" + std::to_string(r_int) + ".jpg";
+        // image_path = "/users/eleves-a/2017/gabriel.fedrigo-barcik/BoostingDetection/build/pos/im" + std::to_string(r_int) + ".jpg";
   
         // std::cout << image_path << std::endl;
     }
@@ -181,8 +114,76 @@ void find_random_image_learning (int NUMBER_FILES_POS, int NUMBER_FILES_NEG, int
     std::cout << "Elapsed Time (Calculate Feature): " << elapsed_feature.count() << std::endl;
 }
 
+
+void generate_random_vectors(int* random_img, int* cks, int K) {
+    // int NUMBER_FILES_POS = number_of_files("/users/eleves-a/2017/gabriel.fedrigo-barcik/BoostingDetection/build/pos/");
+    int NUMBER_FILES_POS = number_of_files("/usr/local/INF442-2018/P5/app/pos/");
+    // int NUMBER_FILES_NEG = number_of_files("/users/eleves-a/2017/gabriel.fedrigo-barcik/BoostingDetection/build/neg/");
+    int NUMBER_FILES_NEG = number_of_files("/usr/local/INF442-2018/P5/app/neg/");
+    for (int i = 0; i < K; i++) {
+
+        double r = ((double) rand() / (RAND_MAX));
+        int r_int = 1;
+
+        if(r < 0.5){
+            cks[i] = -1;
+
+            // srand((unsigned)time(NULL));
+            r = (rand()%(NUMBER_FILES_NEG));
+            r_int = (int) r;
+
+            random_img[i] = r_int;
+
+        } else {
+            cks[i] = 1;
+    
+            // srand((unsigned)time(NULL));
+            r = (rand()%(NUMBER_FILES_POS));
+            r_int = (int) r;
+
+            random_img[i] = r_int;
+        }
+    }
+}
+
+void create_features(int k, int* random_img, int* cks, int* features, double* classifiers_w1, double* classifiers_w2, int rank, int classifiers_size, std::vector<Haar_filter> &filters) {
+
+    // std::cout << "begin of create_feature" << std::endl;
+
+    std::string image_path;
+    // neg folder
+    if (cks[k] == -1) {
+        image_path = "/usr/local/INF442-2018/P5/app/neg/im" + std::to_string(random_img[k]) + ".jpg";
+        // image_path = "/users/eleves-a/2017/gabriel.fedrigo-barcik/BoostingDetection/build/neg/im" + std::to_string(random_img[k]) + ".jpg";.
+    } else { // pos folder
+        image_path = "/usr/local/INF442-2018/P5/app/pos/im" + std::to_string(random_img[k]) + ".jpg";
+        // image_path = "/users/eleves-a/2017/gabriel.fedrigo-barcik/BoostingDetection/build/neg/im" + std::to_string(random_img[k]) + ".jpg";.
+    }
+
+    // std::cout << "ck: " << cks[k] << " random nb: " << random_img[k] << std::endl;
+
+    cv::Mat image = cv::imread(image_path);
+    Image img = Image(image_path, image);
+
+    // std::cout << "image found" << std::endl;
+
+    int index = 0;
+    for (unsigned long i = rank*classifiers_size; i < (rank+1)*classifiers_size; i++) {
+        features[index] = filters[i].feature(img.integral_image);
+        index++;
+    }
+
+}
+
 int classifier_h_of_a_feature (Classifier classifier, double feature_of_image) {
 	if (classifier.w1 * feature_of_image + classifier.w2 >= 0.0)
+		return 1;
+	else 
+		return -1;
+}
+
+int classifier_h_of_a_feature_mpi (double w1, double w2, int feature) {
+	if (w1 * feature + w2 >= 0.0)
 		return 1;
 	else 
 		return -1;
@@ -215,6 +216,33 @@ void train_model(std::vector<Classifier> &classifiers, std::vector<Haar_filter> 
         auto finish_classify = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> elapsed_classify = finish_classify - start_classify;
         features.clear();
+    }
+}
+
+void train_model_mpi(int K, int* random_img, int* cks, double* classifiers_w1, double* classifiers_w2, int rank, int world_size, int classifiers_size, std::vector<Haar_filter> &filters){
+    double epsilon = 0.01; // TODO: evaluate the right value for epsilon
+    int* features = new int[classifiers_size];
+    long Xki, h;
+
+    // std::cout << "Begin of train model mpi" << std::endl;
+
+    for(int k = 0; k < K; k++){
+        // auto start_random = std::chrono::high_resolution_clock::now();
+        // std::cout << "getting feature" << std::endl;
+        create_features(k, random_img, cks, features, classifiers_w1, classifiers_w2, rank, classifiers_size, filters);
+
+        // auto finish_random = std::chrono::high_resolution_clock::now();
+        // std::chrono::duration<double> elapsed_random = finish_random - start_random;
+
+        // auto start_classify = std::chrono::high_resolution_clock::now();
+        for(int i = 0; i < classifiers_size; i++){
+            Xki = features[i];
+            h = classifier_h_of_a_feature_mpi(classifiers_w1[i], classifiers_w2[i], features[i]);
+            classifiers_w1[i] -= epsilon * (h - cks[k]) * Xki;
+            classifiers_w2[i] -= epsilon * (h - cks[k]);
+        }
+        // auto finish_classify = std::chrono::high_resolution_clock::now();
+        // std::chrono::duration<double> elapsed_classify = finish_classify - start_classify;
     }
 }
 
@@ -366,43 +394,113 @@ void boosting_classifiers(std::vector<Classifier> &classifiers, std::vector<Haar
 	features_of_images.clear();*/
 }
 
-int main () {
+int main (int argc, char* argv[]) {
+    // PARAMETERS
+    int K = 1000; // TODO: evaluate the right value for K
+    
+    const int root = 0;
+    int rank, world_size;
+    
+    // Launch MPI processes on each node
+    MPI_Init(&argc, &argv);
 
-    auto start_haar_filter = std::chrono::high_resolution_clock::now();
+    // Get the id and number of threads
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &world_size);
 
-    // create haar filters (1.2)
+    std::cout << "hello MPI user: from process " << rank << " of " << world_size << std::endl;
+
+    // auto start_haar_filter = std::chrono::high_resolution_clock::now();
+
+    // Create haar filters (1.2)
     std::vector<Haar_filter> filters;
     create_filters(filters);
+    unsigned long NUM_CLASSIFIERS = filters.size();
 
-    auto finish_haar_filter = std::chrono::high_resolution_clock::now();
+    std::cout << "filters have been created" << std::endl;
 
-    std::chrono::duration<double> elapsed_haar_filter = finish_haar_filter - start_haar_filter;
+    // auto finish_haar_filter = std::chrono::high_resolution_clock::now();
 
-    std::cout << "Elapsed Time (Haar Filter): " << elapsed_haar_filter.count() << std::endl;
+    // std::chrono::duration<double> elapsed_haar_filter = finish_haar_filter - start_haar_filter;
+
+    // std::cout << "Elapsed Time (Haar Filter): " << elapsed_haar_filter.count() << std::endl;
 
     auto start_training = std::chrono::high_resolution_clock::now();
 
     // training Model (Ex 2.1)
-    std::vector<Classifier> classifiers = initialize_classifier_vector(filters.size());
-    train_model(classifiers, filters);
+    // std::vector<Classifier> classifiers = initialize_classifier_vector(filters.size());
+
+    // Create variables for selecting the same images
+
+    int* random_img = new int[K]; // index of random image
+    int* cks = new int[K]; // gives the origin of this image
+    double* global_classifier_w1;
+    double* global_classifier_w2;
+
+    if (rank == root) {
+        global_classifier_w1 = new double[NUM_CLASSIFIERS];
+        global_classifier_w2 = new double[NUM_CLASSIFIERS];
+        // pick-up random images
+        std::cout << "generate random vectors" << std::endl;
+        generate_random_vectors(random_img, cks, K);
+    }
+
+    std::cout << "begin broadcast by " << rank << std::endl;
+
+    // Broadcast the chosen images to all process
+    MPI_Bcast(random_img, K, MPI_INT, root, MPI_COMM_WORLD);
+    MPI_Bcast(cks, K, MPI_INT, root, MPI_COMM_WORLD);
+
+
+    // Create a part of the classifiers
+    int div = NUM_CLASSIFIERS / world_size;
+    int rest = NUM_CLASSIFIERS % world_size;
+    double* classifiers_w1;
+    double* classifiers_w2;
+    int classifiers_size;
+    if (rank == world_size - 1) {
+        classifiers_size = div + rest;
+        classifiers_w1 = new double[classifiers_size];
+        classifiers_w2 = new double[classifiers_size];
+        std::cout << "calling mpi train from last process" << std::endl;
+        train_model_mpi(K, random_img, cks, classifiers_w1, classifiers_w2, rank, world_size, classifiers_size, filters);
+    } else {
+        classifiers_size = div;
+        classifiers_w1 = new double[classifiers_size];
+        classifiers_w2 = new double[classifiers_size];
+        std::cout << "calling mpi train from all others processes" << std::endl;
+        train_model_mpi(K, random_img, cks, classifiers_w1, classifiers_w2, rank, world_size, classifiers_size, filters);
+    }
+
+    std::cout << "end of train model... before gather" << std::endl;
+
+    MPI_Gather(classifiers_w1, classifiers_size, MPI_DOUBLE, global_classifier_w1, classifiers_size, MPI_DOUBLE, root, MPI_COMM_WORLD);
+    MPI_Gather(classifiers_w2, classifiers_size, MPI_DOUBLE, global_classifier_w2, classifiers_size, MPI_DOUBLE, root, MPI_COMM_WORLD);
+
+    std::cout << "end of weak training" << std::endl; 
 
     auto finish_training = std::chrono::high_resolution_clock::now();
 
     std::chrono::duration<double> elapsed_training = finish_training - start_training;
+    
+    if (rank == root)
+        std::cout << "Elapsed Time (Training): " << elapsed_training.count() << std::endl;
 
-    std::cout << "Elapsed Time (Training): " << elapsed_training.count() << std::endl;
-    std::cout << "filters size: " << filters.size() << std::endl;
-    std::cout << "classifers size: " << classifiers.size() << std::endl;
+    // std::cout << "filters size: " << filters.size() << std::endl;
+    // std::cout << "classifers size: " << classifiers.size() << std::endl;
 
     // Boosting des classifieurs faibles (Ex 2.2)
-    std::vector<Classifier> final_classifier;
-    boosting_classifiers(classifiers, filters, final_classifier);
+    // std::vector<Classifier> final_classifier;
+    // boosting_classifiers(classifiers, filters, final_classifier);
 
     //TODO: lembrar de deletar todos os vetores
 
-    filters.clear();
-    classifiers.clear();
-    final_classifier.clear();
+    // filters.clear();
+    // classifiers.clear();
+    // final_classifier.clear();
+
+    MPI_Finalize();
+
     return 0;
 
 }
