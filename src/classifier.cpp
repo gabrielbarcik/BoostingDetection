@@ -17,3 +17,7 @@ Classifier::Classifier(double w1, double w2){
 	this->w1 = w1;
 	this->w2 = w2;
 }
+
+void Classifier::print(){
+	std::cout << "w1 = " << this->w1 << " | w2 = " << this->w2 << std::endl;
+}

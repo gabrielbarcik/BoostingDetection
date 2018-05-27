@@ -100,7 +100,7 @@ int Haar_filter::feature(cv::Mat &integral_image){
 	int feature = 0;
 	Filter f = Filter(1, 0, 0, 0, 0);
 
-	for(unsigned long k = 0; k < this->black_filters.size(); k++){
+	for(int k = 0; k < this->black_filters.size(); k++){
 		f = this->black_filters[k];
 		feature += integral_image.at<uchar>(f.i_min + f.height,f.j_min + f.width) 
 					- integral_image.at<uchar>(f.i_min + f.height,f.j_min)
@@ -109,7 +109,7 @@ int Haar_filter::feature(cv::Mat &integral_image){
 
 	}
 
-	for(unsigned long k = 0; k < this->white_filters.size(); k++){
+	for(int k = 0; k < this->white_filters.size(); k++){
 		f = this->white_filters[k];
 		feature -= integral_image.at<uchar>(f.i_min + f.height,f.j_min + f.width) 
 					- integral_image.at<uchar>(f.i_min + f.height,f.j_min)

@@ -1,8 +1,7 @@
 #include <iostream>
-#include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <opencv/cv.hpp>
 #include <opencv2/imgproc.hpp>
-
 #include "../lib/image.hpp"
 
 Image::Image(std::string name, cv::Mat image) {

@@ -18,6 +18,9 @@
 
 #include <mpi.h> 
 
+#include <fstream>
+using namespace std;
+
 
 void create_filters (std::vector<Haar_filter> &filters) {
     // parameters
@@ -127,15 +130,8 @@ void create_features(int k, int* random_img, int* cks, int* features, double* cl
 
 }
 
-int classifier_h_of_a_feature (Classifier classifier, double feature_of_image) {
-	if (classifier.w1 * feature_of_image + classifier.w2 >= 0.0)
-		return 1;
-	else 
-		return -1;
-}
-
-int classifier_h_of_a_feature_mpi (double w1, double w2, int feature) {
-	if (w1 * feature + w2 >= 0.0)
+int classifier_h_of_a_feature (double w1, double w2, int feature_of_image) {
+	if (w1 * (double) feature_of_image + w2 >= 0.0)
 		return 1;
 	else 
 		return -1;
@@ -159,7 +155,7 @@ void train_model_mpi(int K, int* random_img, int* cks, double* classifiers_w1, d
         // auto start_classify = std::chrono::high_resolution_clock::now();
         for(int i = 0; i < classifiers_size; i++){
             Xki = features[i];
-            h = classifier_h_of_a_feature_mpi(classifiers_w1[i], classifiers_w2[i], features[i]);
+            h = classifier_h_of_a_feature(classifiers_w1[i], classifiers_w2[i], features[i]);
             classifiers_w1[i] -= epsilon * (h - cks[k]) * Xki;
             classifiers_w2[i] -= epsilon * (h - cks[k]);
         }
@@ -168,19 +164,11 @@ void train_model_mpi(int K, int* random_img, int* cks, double* classifiers_w1, d
     }
 }
 
-std::vector<Classifier> initialize_classifier_vector(unsigned long size){
-	std::vector<Classifier> vec;
-
-	for(unsigned long i = 0; i < size; i++)
-		vec.push_back(Classifier());
-
-	return vec;
-}
-
-std::vector<double> initialize_weights(std::vector<double> &weights_lambda, int n){
+void initialize_weights(double* weights_lambda, int n){
+	weights_lambda = new double[n];
 	double base_case = 1 / (double) n;
 	for(unsigned long i = 0; i < n; i++){
-		weights_lambda.push_back(base_case);
+		weights_lambda[i] = base_case;
 	}
 }
 
@@ -189,72 +177,6 @@ int function_of_error_E (int h, int c){
 		return 0;
 	} else
 		return 1;
-}
-
-
-int classifier_h_of_a_image(std::vector<int> features_of_image, std::vector<Classifier> classifiers){
-	int num_positives = 0;
-
-	for(unsigned long i = 0; i < features_of_image.size(); i++){
-			if (classifier_h_of_a_feature(classifiers[i], features_of_image[i]) == 1)
-				num_positives++;
-	}
-
-	if(num_positives > features_of_image.size()/2)
-		return 1;
-	else
-		return -1;
-}
-
-void calculate_features_of_all_images(std::vector< std::vector<int> > &features_of_images,
-		std::vector<int> &c, std::vector<Haar_filter> &filters, int NUMBER_FILES_POS, int NUMBER_FILES_NEG){
-	
-    std::string image_path;
-    cv::Mat image;
-
-	for(int i = 1; i <= NUMBER_FILES_NEG; i++){
-        image_path = "neg/im" + std::to_string(i) + ".jpg";
-        image = cv::imread(image_path);
-    	Image img = Image(image_path, image);
-    	    for (unsigned long j = 0; j < filters.size(); j++) {
-        		features_of_images[i].push_back(filters[j].feature(img.integral_image));
-        		c.push_back(-1);
-    		}
-	}
-       
-    for(int i = NUMBER_FILES_NEG + 1; i <= NUMBER_FILES_POS + NUMBER_FILES_NEG; i++){
-        image_path = "pos/im" + std::to_string(i) + ".jpg";
-        image = cv::imread(image_path);
-    	 Image img = Image(image_path, image);
-    	    for (unsigned long j = 0; j < filters.size(); j++) {
-        		features_of_images[i].push_back(filters[j].feature(img.integral_image));
-        		c.push_back(1);
-    		}
-	}
-
-}
-
-void update_weight(std::vector<double> &weights_lambda, Classifier best_h, 
-					std::vector<Classifier> &classifiers, std::vector< std::vector<int> > features_of_images,
-					int i_minimisator, std::vector<int> c, double alfa) {
-	double sum = 0.0;
-
-	// update weights
-    for(int i = 0; i < weights_lambda.size(); i++){
-    	weights_lambda[i] *= exp(-c[i]*alfa*classifier_h_of_a_feature(best_h, features_of_images[i_minimisator][i]));
-    	sum += weights_lambda[i];
-    }
-
-    // normalization
-    for(int i = 0; i < weights_lambda.size(); i++){
-    	weights_lambda[i] /= sum;
-    }
-}
-
-void initialize_F(std::vector<Classifier> &classifiers_result_F, int size){
-	for (int i = 0; i < size; i++){
-		classifiers_result_F.push_back(Classifier(0.0,0.0));
-	}
 }
 
 void initialize_images_dev (std::vector<Image> &images){
@@ -279,7 +201,6 @@ void initialize_images_dev (std::vector<Image> &images){
 
 void initialize_c_dev(std::vector<int> &c, int n){
 
-    int NUMBER_FILES_POS = number_of_files("/usr/local/INF442-2018/P5/dev/pos");
     int NUMBER_FILES_NEG = number_of_files("/usr/local/INF442-2018/P5/dev/neg");
 
     for(int i = 0; i < n; i++){
@@ -304,43 +225,40 @@ void calculate_feature_i(std::vector<Image> &images, std::vector<int> &feature_i
 
 }
 
-void update_weight(std::vector<double> &weights_lambda, Classifier best_h, 
-                    std::vector<Classifier> &classifiers, std::vector<Image> &images, 
-                    std::vector<int> &feature_i, std::vector<Haar_filter> &filters, 
+void update_weight(double* weights_lambda, double* global_classifier_w1, double* global_classifier_w2, 
+					std::vector<Image> &images, std::vector<int> &feature_i, std::vector<Haar_filter> &filters, 
                     int i_minimisator, std::vector<int> &c, double alfa) {
+	        
+	int n = images.size();
     double sum = 0.0;
     calculate_feature_i(images, feature_i, filters, i_minimisator);
     // update weights
-    for(int j = 0; j < images.size(); j++){
+    for(int j = 0; j < n; j++){
 
-        weights_lambda[j] *= exp(-c[j]*alfa*classifier_h_of_a_feature(best_h, feature_i[j]));
+        weights_lambda[j] *= exp(-c[j]*alfa*classifier_h_of_a_feature(global_classifier_w1[i_minimisator],
+        	global_classifier_w2[i_minimisator], feature_i[j]));
         sum += weights_lambda[j];
     }
 
     // normalization
-    for(int i = 0; i < weights_lambda.size(); i++){
+    for(int i = 0; i < n; i++){
         weights_lambda[i] /= sum;
     }
 }
 
-void boosting_classifiers(std::vector<Classifier> &classifiers, std::vector<Haar_filter> &filters,
-									std::vector<Classifier> &final_classifier){
 
-
+void boosting_classifiers(double* global_classifier_w1, double* global_classifier_w2,
+						std::vector<Haar_filter> &filters, double* final_classifier_w1,
+						double* final_classifier_w2, int rank, int world_size, int classifiers_size){
     
     // double teta = 0.789; // TODO: evaluete a good number for teta
-    
 
-    //TODO: calcula pra uma features i, um vetor e vou escrever em cima dele
-    // std::vector<int> feature_i -> feature_i[k] = filters[i].calculate_feature(images[k].integral_image)
-
-	// std::vector< std::vector<int> > features_of_images;
-    std::vector<double> weights_lambda;
+    double* weights_lambda;
 	std::vector<int> c; // c[i] = 1 if the image is a face and -1 if it is not.
     std::vector<Image> images; // a vector of all images in dev/pos and dev/neg
     std::vector<int> feature_i;
 
-    initialize_F(final_classifier, classifiers.size());
+    //initialization of the parameters
     initialize_images_dev(images);
     initialize_weights(weights_lambda, images.size());
     initialize_c_dev(c, images.size());
@@ -353,45 +271,94 @@ void boosting_classifiers(std::vector<Classifier> &classifiers, std::vector<Haar
 	double epsilon_i; // one of the epsilons evalueted
     double epsilon_min; // the smalest epsilon evalueted
     double alfa; // alfa(k) = ln ((1 - episilon(k))/k) / 2
-	Classifier best_h; // is the classifier that minimises the erreur (epsilon)
-	int i_minimisator; // the positions of the features that minimizes the erreur
-    int num_interaction_N = 1; // TODO: evaluete a good number for N
-
+	int *all_i_minimisateurs = new int [world_size];
+    int num_interaction_N = 10; // TODO: evaluete a good number for N
 
 	for(int k = 0; k < num_interaction_N; k++) {
-        epsilon_min = DBL_MAX;
-        
-        for(int i = features_size-2; i < features_size; i++){
-            epsilon_i = 0.0;
-            std::cout << "here k = " << k << "/" << num_interaction_N << " | i = " << i << std::endl;
-            calculate_feature_i(images, feature_i, filters, i);
-            for(int j = 0; j < num_images; j++){
-                epsilon_i += weights_lambda[j]*function_of_error_E(
-                    classifier_h_of_a_feature(classifiers[i], feature_i[j]),
-                    c[j]);
-            }
 
-            if(epsilon_i < epsilon_min){
-                epsilon_min = epsilon_i;
-                best_h = classifiers[i];
-                i_minimisator = i;
-            }
+        int div = features_size / world_size;
+    	int rest = features_size % world_size;
+    	int my_i_minimisator;
+        double my_epsilon_min = DBL_MAX;
+        if (rank != world_size - 1){
+        	for(int i = rank*div; i < (rank+1)*div; i++){
+	            epsilon_i = 0.0;
+	            calculate_feature_i(images, feature_i, filters, i);
+	            for(int j = 0; j < num_images; j++){
+	                epsilon_i += weights_lambda[j]*function_of_error_E(
+	                    classifier_h_of_a_feature(global_classifier_w1[i], global_classifier_w2[i], feature_i[j]),
+	                    c[j]);
+            	}
 
+	            if(epsilon_i < my_epsilon_min){
+	                my_epsilon_min = epsilon_i;
+	                my_i_minimisator = i;
+	            }
+
+        	}
+        } else {
+        	std::cout << "Hi1" << std::endl;
+        	for(int i = rank*div; i < (rank+1)*div + rest; i++){
+	            epsilon_i = 0.0;
+	            std::cout << "Hi2" << std::endl;
+	            calculate_feature_i(images, feature_i, filters, i);
+	            std::cout << "Hi3" << std::endl;
+	            for(int j = 0; j < num_images; j++){
+	                epsilon_i += weights_lambda[j]*function_of_error_E(
+	                    classifier_h_of_a_feature(global_classifier_w1[i], global_classifier_w2[i], feature_i[j]),
+	                    c[j]);
+            	}
+            	std::cout << "Hi4" << std::endl;
+	            if(epsilon_i < my_epsilon_min){
+	                my_epsilon_min = epsilon_i;
+	                my_i_minimisator = i;
+	            }
+
+        	}
         }
 
+		
+        MPI_Reduce(&my_epsilon_min, &epsilon_min, 1, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
+        MPI_Gather(&my_i_minimisator, 1, MPI_INT, all_i_minimisateurs, world_size, MPI_INT, 0, MPI_COMM_WORLD);
 
-		std::cout << "epsilon_min = " << epsilon_min << " | i_minimisator = " << i_minimisator << std::endl;
+ 		
+ 		if(rank == 0){
+ 			int i_minimisator; // the positions of the features that minimizes the erreur
+ 			
+ 			for(int k = 0; k < world_size; k++){ // find i_minimisator
+ 				int i = all_i_minimisateurs[k];
+ 				epsilon_i = 0.0;
+	            calculate_feature_i(images, feature_i, filters, i);
+	            for(int j = 0; j < num_images; j++){
+	                epsilon_i += weights_lambda[j]*function_of_error_E(
+	                    classifier_h_of_a_feature(global_classifier_w1[i], global_classifier_w2[i], feature_i[j]),
+	                    c[j]);
+ 				}
+ 				if(epsilon_i == epsilon_min){
+ 					i_minimisator = i;
+ 					break;
+ 				}
+ 			}
 
-		alfa = log((1.0-epsilon_min)/epsilon_min)/2;
-		final_classifier[i_minimisator].w1 += alfa*best_h.w1;
-		final_classifier[i_minimisator].w2 += alfa*best_h.w2;
-        std::cout << "debug1" << std::endl;
-		update_weight(weights_lambda, best_h, classifiers, images, feature_i, filters, i_minimisator, c, alfa);	
-        std::cout << "debug2" << std::endl;
+
+ 			std::cout << "epsilon_min = " << epsilon_min << " | i_minimisator = " << i_minimisator << std::endl;
+
+			alfa = log((1.0-epsilon_min)/epsilon_min)/2;
+			final_classifier_w1[i_minimisator] += alfa*global_classifier_w1[i_minimisator];
+			final_classifier_w2[i_minimisator] += alfa*global_classifier_w2[i_minimisator];
+	        std::cout << "debug1" << std::endl;
+			update_weight(weights_lambda, global_classifier_w1, global_classifier_w2 , images, feature_i, filters, i_minimisator, c, alfa);	
+	        std::cout << "debug2" << std::endl;
+ 		}
+
+ 		MPI_Bcast(weights_lambda, num_images, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		
 	}
 
-	weights_lambda.clear();
-	int size = filters.size();
+	delete[] weights_lambda;
+	images.clear();
+	feature_i.clear();
+	c.clear();
 }
 
 int main (int argc, char* argv[]) {
@@ -428,8 +395,6 @@ int main (int argc, char* argv[]) {
     auto start_training = std::chrono::high_resolution_clock::now();
 
     // training Model (Ex 2.1)
-    // std::vector<Classifier> classifiers = initialize_classifier_vector(filters.size());
-
     // Create variables for selecting the same images
 
     int* random_img = new int[K]; // index of random image
@@ -437,7 +402,6 @@ int main (int argc, char* argv[]) {
     double* global_classifier_w1;
     double* global_classifier_w2;
 
-    std::vector<Classifier> classifiers(filters.size());
 
     if (rank == root) {
         global_classifier_w1 = new double[NUM_CLASSIFIERS];
@@ -490,14 +454,34 @@ int main (int argc, char* argv[]) {
 
 
     // ********************************************************************************************************************************************************
+    // Ex 2.2
     // TODO PARALELIZAR ABAIXO
 
     auto start_boosting = std::chrono::high_resolution_clock::now();
 
     // Boosting des classifieurs faibles (Ex 2.2)
-    std::vector<Classifier> final_classifier;
-    boosting_classifiers(classifiers, filters, final_classifier);
+    double* final_classifier_w1;
+    double* final_classifier_w2;
 
+    //if (rank == root) {
+        final_classifier_w1 = new double[NUM_CLASSIFIERS]; // the defeult value is already 0 for all positions
+        final_classifier_w2 = new double[NUM_CLASSIFIERS];
+    //}
+
+       // Preciso dar um Bcast de global_classifier_w1 e w2 pra todo mundo
+   std::cout << "Ola" << std::endl;
+   MPI_Bcast(global_classifier_w1, NUM_CLASSIFIERS, MPI_DOUBLE, root, MPI_COMM_WORLD);
+   MPI_Bcast(global_classifier_w2, NUM_CLASSIFIERS, MPI_DOUBLE, root, MPI_COMM_WORLD);
+   std::cout << "Oi" << std::endl;
+   /*if(rank == 1){
+   		for(int i = 0; i <= 0; i++)
+   		std::cout << "w1 = " << global_classifier_w1[i]  << " w2 = " << global_classifier_w2[i] << std::endl;
+
+   }*/
+
+   /*boosting_classifiers(global_classifier_w1, global_classifier_w2 ,filters, 
+    	final_classifier_w1, final_classifier_w2, rank, world_size, classifiers_size);
+*/
     auto finish_boosting = std::chrono::high_resolution_clock::now();
 
     std::chrono::duration<double> elapsed_boosting = finish_boosting - start_boosting;
@@ -505,14 +489,36 @@ int main (int argc, char* argv[]) {
     std::cout << "Elapsed Time (Boosting): " << elapsed_boosting.count() << std::endl;    
 
 
+    filters.clear();
+    delete[] random_img;
+    delete[] cks;
+    
+    if(rank == root){
+    	delete[] global_classifier_w1;
+    	delete[] global_classifier_w2;
+    }
 
-    //TODO: lembrar de deletar todos os vetores
 
-    // filters.clear();
-    // classifiers.clear();
-    // final_classifier.clear();
+    // Save the final classifier in a file
+    if(rank == root){
+
+    	ofstream myfile;
+		myfile.open ("final_classifier_w1.txt");
+		for (int i = 0; i < NUM_CLASSIFIERS; i++){
+			myfile << final_classifier_w1[i] << "\n";
+		}
+		myfile.close();
+
+		myfile.open ("final_classifier_w2.txt");
+		for (int i = 0; i < NUM_CLASSIFIERS; i++){
+			myfile << final_classifier_w2[i] << "\n";
+		}
+		myfile.close();
+    }
+
 
     MPI_Finalize();
+
 
     return 0;
 
