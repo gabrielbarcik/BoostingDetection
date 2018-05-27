@@ -4,8 +4,8 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 
-#include "../lib/image.hpp"
-#include "../lib/haar_filter.hpp"
+#include "../../lib/image.hpp"
+#include "../../lib/haar_filter.hpp"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -66,7 +66,7 @@ int number_of_files(std::string folder_name) {
 }
 
 void initialize_images_test (std::vector<Image> &images, string path){
-    int NUMBER_FILES = number_of_files("/usr/local/INF442-2018/P5/test/" + path);
+    int NUMBER_FILES = number_of_files2("/usr/local/INF442-2018/P5/test/" + path);
 
     std::string image_path;
     cv::Mat image;
@@ -220,7 +220,9 @@ int main(){
     ofstream myfile;
     myfile.open ("test_result.txt");
     for (int i = 0; i < vectors_sizes; i++){
-        myfile << "teta = " << steps_teta[i] << "; " <<  << "\n";
+        myfile << "teta = " << steps_teta[i] << "; " << "correct_positive = " << correct_positive[i] << "; "<<
+         "false_positive = " << false_positive[i] << "; " << "correct_negative = " << correct_negative[i] << "; " << 
+         "false_negative = " << false_negative[i] << "; " <<  "\n";
     }
     myfile.close();
 

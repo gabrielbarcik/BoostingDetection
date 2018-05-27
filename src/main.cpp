@@ -250,8 +250,6 @@ void update_weight(double* weights_lambda, double* global_classifier_w1, double*
 void boosting_classifiers(double* global_classifier_w1, double* global_classifier_w2,
 						std::vector<Haar_filter> &filters, double* final_classifier_w1,
 						double* final_classifier_w2, int rank, int world_size, int classifiers_size){
-    
-    // double teta = 0.789; // TODO: evaluete a good number for teta
 
     double* weights_lambda;
 	std::vector<int> c; // c[i] = 1 if the image is a face and -1 if it is not.
@@ -272,7 +270,8 @@ void boosting_classifiers(double* global_classifier_w1, double* global_classifie
     double epsilon_min; // the smalest epsilon evalueted
     double alfa; // alfa(k) = ln ((1 - episilon(k))/k) / 2
 	int *all_i_minimisateurs = new int [world_size];
-    int num_interaction_N = 10; // TODO: evaluete a good number for N
+    int num_interaction_N = 10; // TODO: evaluete a good number for N    
+
 
 	for(int k = 0; k < num_interaction_N; k++) {
 
@@ -344,11 +343,10 @@ void boosting_classifiers(double* global_classifier_w1, double* global_classifie
  			std::cout << "epsilon_min = " << epsilon_min << " | i_minimisator = " << i_minimisator << std::endl;
 
 			alfa = log((1.0-epsilon_min)/epsilon_min)/2;
+		
 			final_classifier_w1[i_minimisator] += alfa*global_classifier_w1[i_minimisator];
 			final_classifier_w2[i_minimisator] += alfa*global_classifier_w2[i_minimisator];
-	        std::cout << "debug1" << std::endl;
 			update_weight(weights_lambda, global_classifier_w1, global_classifier_w2 , images, feature_i, filters, i_minimisator, c, alfa);	
-	        std::cout << "debug2" << std::endl;
  		}
 
  		MPI_Bcast(weights_lambda, num_images, MPI_DOUBLE, 0, MPI_COMM_WORLD);
@@ -359,6 +357,7 @@ void boosting_classifiers(double* global_classifier_w1, double* global_classifie
 	images.clear();
 	feature_i.clear();
 	c.clear();
+
 }
 
 int main (int argc, char* argv[]) {
