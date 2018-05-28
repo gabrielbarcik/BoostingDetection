@@ -327,18 +327,18 @@ void boosting_classifiers(double* global_classifier_w1, double* global_classifie
  		MPI_Bcast(weights_lambda, NUM_IMAGES, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 	}
     
-    /*
+    
 	delete[] weights_lambda;
 	images.clear();
 	feature_i.clear();
 	c.clear();
-    */
-    
+    delete[] all_i_minimizer;
+    delete[] all_epsilons;
 }
 
 int main (int argc, char* argv[]) {
     // PARAMETERS
-    int K = 1000; // TODO: evaluate the right value for K
+    int K = 4000; // TODO: evaluate the right value for K
     
     const int root = 0;
     int rank, world_size;
@@ -397,18 +397,35 @@ int main (int argc, char* argv[]) {
     double* classifiers_w1;
     double* classifiers_w2;
     int classifiers_size;
+
     if (rank == world_size - 1) {
         classifiers_size = div + rest;
         classifiers_w1 = new double[classifiers_size];
         classifiers_w2 = new double[classifiers_size];
-        std::cout << "calling mpi train from last process" << std::endl;
-        train_model_mpi(K, random_img, cks, classifiers_w1, classifiers_w2, rank, world_size, classifiers_size, filters);
     } else {
         classifiers_size = div;
         classifiers_w1 = new double[classifiers_size];
         classifiers_w2 = new double[classifiers_size];
-        std::cout << "calling mpi train from all others processes" << std::endl;
-        train_model_mpi(K, random_img, cks, classifiers_w1, classifiers_w2, rank, world_size, classifiers_size, filters);
+    }
+
+    for (int i = 0; i < classifiers_size; i++) {
+        classifiers_w1[i] = 1;
+        classifiers_w2[i] = 0;
+    }
+
+    train_model_mpi(K, random_img, cks, classifiers_w1, classifiers_w2, rank, world_size, classifiers_size, filters);
+
+    if (rank == root) {
+        for (int i = 0; i < 100; i++){
+            std::cout << classifiers_w1[i] << " ";
+        }
+        std::cout << std::endl;
+
+        std::cout << std::endl;
+        for (int i = 0; i < 100; i++) {
+            std::cout << classifiers_w2[i] << " ";
+        } 
+        std::cout << std::endl;
     }
 
     std::cout << "end of train model... before gather" << std::endl;
@@ -432,7 +449,7 @@ int main (int argc, char* argv[]) {
     // Boosting des classifieurs faibles (Ex 2.2)
     double* final_classifier_w1;
     double* final_classifier_w2;
-    int NUM_STRONG_FEATURES = 3; // TODO: find out
+    int NUM_STRONG_FEATURES = 200; // TODO: find out
     std::vector<double> alfa;
 
     
@@ -440,11 +457,11 @@ int main (int argc, char* argv[]) {
     final_classifier_w2 = new double[NUM_CLASSIFIERS];
     
        // Preciso dar um Bcast de global_classifier_w1 e w2 pra todo mundo
-   MPI_Bcast(global_classifier_w1, NUM_CLASSIFIERS, MPI_DOUBLE, root, MPI_COMM_WORLD);
-   MPI_Bcast(global_classifier_w2, NUM_CLASSIFIERS, MPI_DOUBLE, root, MPI_COMM_WORLD);
-   std::cout << "broadcast of global_classifier done correctly!" << std::endl;
+    MPI_Bcast(global_classifier_w1, NUM_CLASSIFIERS, MPI_DOUBLE, root, MPI_COMM_WORLD);
+    MPI_Bcast(global_classifier_w2, NUM_CLASSIFIERS, MPI_DOUBLE, root, MPI_COMM_WORLD);
+    std::cout << "broadcast of global_classifier done correctly!" << std::endl;
  
-   boosting_classifiers(global_classifier_w1, global_classifier_w2 ,filters, 
+    boosting_classifiers(global_classifier_w1, global_classifier_w2 ,filters, 
     	final_classifier_w1, final_classifier_w2, rank, world_size, classifiers_size, alfa, NUM_STRONG_FEATURES);
 
     auto finish_boosting = std::chrono::high_resolution_clock::now();
@@ -474,7 +491,18 @@ int main (int argc, char* argv[]) {
 			myfile << final_classifier_w2[i] << "\n";
 		}
 		myfile.close();
+
+        myfile.open("alpha.txt");
+        for (int i = 0; i < NUM_STRONG_FEATURES; i++){
+			myfile << alfa[i] << "\n";
+		}
+		myfile.close();
+
     }
+
+    delete[] final_classifier_w1;
+    delete[] final_classifier_w2;
+    alfa.clear();
 
     MPI_Finalize();
 
