@@ -111,11 +111,11 @@ void initialize_test_final_classifier_w2(std::vector<double> &final_classifier_w
 }
 
 void initialize_test_alfas(std::vector<double> &alfas){
-    std::ifstream ifile("final_alfas.txt", std::ios::in);
+    std::ifstream ifile("alphas.txt", std::ios::in);
 
     //check to see that the file was opened correctly:
     if (!ifile.is_open()) {
-        std::cerr << "There was a problem opening the input file final_alfas.txt!\n";
+        std::cerr << "There was a problem opening the input file alphas.txt!\n";
         exit(1);//exit or do additional error checking
     }
 
