@@ -15,6 +15,8 @@
 #include <string>
 #include <math.h>
 #include <float.h>
+#include <time.h>
+#include <stdlib.h>
 
 #include <mpi.h> 
 
@@ -71,19 +73,20 @@ int number_of_files(std::string folder_name) {
 }
 
 void generate_random_vectors(int* random_img, int* cks, int K) {
-    // int NUMBER_FILES_POS = number_of_files("/users/eleves-a/2017/gabriel.fedrigo-barcik/BoostingDetection/build/pos/");
     int NUMBER_FILES_POS = number_of_files("/usr/local/INF442-2018/P5/app/pos/");
-    // int NUMBER_FILES_NEG = number_of_files("/users/eleves-a/2017/gabriel.fedrigo-barcik/BoostingDetection/build/neg/");
     int NUMBER_FILES_NEG = number_of_files("/usr/local/INF442-2018/P5/app/neg/");
+
     for (int i = 0; i < K; i++) {
 
         double r = ((double) rand() / (RAND_MAX));
         int r_int = 1;
-
-        if(r < 0.5){
+        // before: r < 0.5
+        // double threshold = (NUMBER_FILES_NEG) / (NUMBER_FILES_NEG + NUMBER_FILES_POS);
+        double threshold = 0.5;
+        if(r < threshold){
             cks[i] = -1;
 
-            // srand((unsigned)time(NULL));
+            srand((unsigned)time(NULL));
             r = (rand()%(NUMBER_FILES_NEG));
             r_int = (int) r;
 
@@ -92,7 +95,7 @@ void generate_random_vectors(int* random_img, int* cks, int K) {
         } else {
             cks[i] = 1;
     
-            // srand((unsigned)time(NULL));
+            srand((unsigned)time(NULL));
             r = (rand()%(NUMBER_FILES_POS));
             r_int = (int) r;
 
@@ -101,7 +104,8 @@ void generate_random_vectors(int* random_img, int* cks, int K) {
     }
 }
 
-void create_features(int k, int* random_img, int* cks, int* features, double* classifiers_w1, double* classifiers_w2, int rank, int classifiers_size, std::vector<Haar_filter> &filters) {
+void create_features(int k, int* random_img, int* cks, int* features, double* classifiers_w1, double* classifiers_w2, int rank, 
+                        int classifiers_size, std::vector<Haar_filter> &filters) {
 
     // std::cout << "begin of create_feature" << std::endl;
 
@@ -109,10 +113,8 @@ void create_features(int k, int* random_img, int* cks, int* features, double* cl
     // neg folder
     if (cks[k] == -1) {
         image_path = "/usr/local/INF442-2018/P5/app/neg/im" + std::to_string(random_img[k]) + ".jpg";
-        // image_path = "/users/eleves-a/2017/gabriel.fedrigo-barcik/BoostingDetection/build/neg/im" + std::to_string(random_img[k]) + ".jpg";.
     } else { // pos folder
         image_path = "/usr/local/INF442-2018/P5/app/pos/im" + std::to_string(random_img[k]) + ".jpg";
-        // image_path = "/users/eleves-a/2017/gabriel.fedrigo-barcik/BoostingDetection/build/neg/im" + std::to_string(random_img[k]) + ".jpg";.
     }
 
     // std::cout << "ck: " << cks[k] << " random nb: " << random_img[k] << std::endl;
@@ -137,10 +139,21 @@ int classifier_h_of_a_feature (double w1, double w2, int feature_of_image) {
 		return -1;
 }
 
-void train_model_mpi(int K, int* random_img, int* cks, double* classifiers_w1, double* classifiers_w2, int rank, int world_size, int classifiers_size, std::vector<Haar_filter> &filters){
-    double epsilon = 0.01; // TODO: evaluate the right value for epsilon
+void train_model_mpi(int K, int* random_img, int* cks, double* classifiers_w1, double* classifiers_w2, int rank, int world_size, 
+                        int classifiers_size, std::vector<Haar_filter> &filters){
+
+    double epsilon = 0.001; // TODO: evaluate the right value for epsilon
     int* features = new int[classifiers_size];
     long Xki, h;
+
+    double update_w1 = 0;
+    double update_w2 = 0;
+    double threshold_w1 = 0.0001;
+    double threshold_w2 = 0.1;
+    double max_update_w1 = -1;
+    double max_update_w2 = -1;
+
+    double global_max_update_w1;
 
     // std::cout << "Begin of train model mpi" << std::endl;
 
@@ -153,15 +166,47 @@ void train_model_mpi(int K, int* random_img, int* cks, double* classifiers_w1, d
         // std::chrono::duration<double> elapsed_random = finish_random - start_random;
 
         // auto start_classify = std::chrono::high_resolution_clock::now();
+        max_update_w1 = -1;
+        max_update_w2 = -1;
+        global_max_update_w1 = -1;
+
         for(int i = 0; i < classifiers_size; i++){
             Xki = features[i];
+            // std::cout << "getting h" << std::endl;
             h = classifier_h_of_a_feature(classifiers_w1[i], classifiers_w2[i], features[i]);
-            classifiers_w1[i] -= epsilon * (h - cks[k]) * Xki;
-            classifiers_w2[i] -= epsilon * (h - cks[k]);
+            update_w1 = epsilon * (h - cks[k]) * Xki;
+            update_w2 = epsilon * (h - cks[k]);
+            classifiers_w1[i] -= update_w1;
+            classifiers_w2[i] -= update_w2;
+
+            if (abs(update_w1) > max_update_w1) {
+                max_update_w1 = abs(update_w1);
+            }
+            if (abs(update_w2) > max_update_w2) {
+                max_update_w2 = abs(update_w2);
+            }
         }
+
+        // std::cout << "cartas" << std::endl;
+        // std::cout << "in K = " << k << " max_update_w1 = " << max_update_w1 << std::endl;
+        // std::cout << "in K = " << k << " max_update_w1 = " << max_update_w1 << std::endl;
+
+        // std::cout << "calling reduce max update" << std::endl;
+        MPI_Reduce(&max_update_w1, &global_max_update_w1, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+
+        if (rank == 0) {
+            std::cout << "global max: " << global_max_update_w1 << std::endl;
+            if (global_max_update_w1 < threshold_w1 && global_max_update_w1 != 0) {
+                std::cout << "leaving training in k = " << k << std::endl;
+                std::cout << "max_update_w1 = " << global_max_update_w1 << std::endl;
+                break;
+            }
+        }
+
         // auto finish_classify = std::chrono::high_resolution_clock::now();
         // std::chrono::duration<double> elapsed_classify = finish_classify - start_classify;
     }
+
 }
 
 void initialize_weights(double* weights_lambda, int n){
@@ -226,16 +271,16 @@ void calculate_feature_i(std::vector<Image> &images, std::vector<int> &feature_i
 
 void update_weight(double* weights_lambda, double* global_classifier_w1, double* global_classifier_w2, 
 					std::vector<Image> &images, std::vector<int> &feature_i, std::vector<Haar_filter> &filters, 
-                    int i_minimisator, std::vector<int> &c, double alfa) {
+                    int i_minimizer, std::vector<int> &c, double alfa) {
 	        
 	int n = images.size();
     double sum = 0.0;
-    calculate_feature_i(images, feature_i, filters, i_minimisator);
+    calculate_feature_i(images, feature_i, filters, i_minimizer);
     // update weights
     for(int j = 0; j < n; j++){
 
-        weights_lambda[j] *= exp(-c[j]*alfa*classifier_h_of_a_feature(global_classifier_w1[i_minimisator],
-        	global_classifier_w2[i_minimisator], feature_i[j]));
+        weights_lambda[j] *= exp(-c[j]*alfa*classifier_h_of_a_feature(global_classifier_w1[i_minimizer],
+        	global_classifier_w2[i_minimizer], feature_i[j]));
         sum += weights_lambda[j];
     }
 
@@ -249,11 +294,10 @@ void update_weight(double* weights_lambda, double* global_classifier_w1, double*
 void boosting_classifiers(double* global_classifier_w1, double* global_classifier_w2,
 						std::vector<Haar_filter> &filters, double* final_classifier_w1,
 						double* final_classifier_w2, int rank, int world_size, int classifiers_size, 
-                        std::vector<double> &alfa, int NUM_STRONG_FEATURES){
+                        std::vector<double> &alfa, std::vector<int> &strong_features_indices, int NUM_STRONG_FEATURES){
     
     // double teta = 0.789; // TODO: evaluete a good number for teta
 
-   
 	std::vector<int> c; // c[i] = 1 if the image is a face and -1 if it is not.
     std::vector<Image> images; // a vector of all images in dev/pos and dev/neg
     std::vector<int> feature_i;
@@ -315,10 +359,15 @@ void boosting_classifiers(double* global_classifier_w1, double* global_classifie
                     i_minimizer = all_i_minimizer[i];
                 }
             }
-            double alfa1 = (1.0 - epsilon_min) /epsilon_min;
-            std::cout << "eps: " << epsilon_min << std::endl;
-            std::cout << "alfa: " << alfa1 << std::endl;
+            std::cout << "error min = " << epsilon_min << std::endl;
+
+            if (epsilon_min < 0.1) {
+                std::cout << "algorithm converged, error min = " << epsilon_min << std::endl;
+                break; 
+            }
+
             alfa.push_back(log((1.0-epsilon_min)/epsilon_min)/2);
+            strong_features_indices.push_back(i_minimizer);
 			final_classifier_w1[i_minimizer] += alfa.back()*global_classifier_w1[i_minimizer];
 			final_classifier_w2[i_minimizer] += alfa.back()*global_classifier_w2[i_minimizer];
 			update_weight(weights_lambda, global_classifier_w1, global_classifier_w2 , images, feature_i, filters, i_minimizer, c, alfa.back());	
@@ -337,14 +386,23 @@ void boosting_classifiers(double* global_classifier_w1, double* global_classifie
 }
 
 int main (int argc, char* argv[]) {
-    // PARAMETERS
-    int K = 4000; // TODO: evaluate the right value for K
-    
+
+    // srand (time(NULL));
+
     const int root = 0;
     int rank, world_size;
     
     // Launch MPI processes on each node
     MPI_Init(&argc, &argv);
+
+/*
+    int provided;
+    MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
+    if (provided < MPI_THREAD_MULTIPLE) {
+        // Error - MPI does not provide needed threading level
+        std::cout << "ERROR" << std::endl;
+    }
+*/
 
     // Get the id and number of threads
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -371,6 +429,9 @@ int main (int argc, char* argv[]) {
 
     // training Model (Ex 2.1)
     // Create variables for selecting the same images
+    
+    // PARAMETERS
+    const int K = 10000; // TODO: evaluate the right value for K
 
     int* random_img = new int[K]; // index of random image
     int* cks = new int[K]; // gives the origin of this image
@@ -378,7 +439,6 @@ int main (int argc, char* argv[]) {
     double* global_classifier_w2 = new double[NUM_CLASSIFIERS];
 
     if (rank == root) {
-
         // pick-up random images
         std::cout << "generate random vectors" << std::endl;
         generate_random_vectors(random_img, cks, K);
@@ -389,7 +449,6 @@ int main (int argc, char* argv[]) {
     // Broadcast the chosen images to all process
     MPI_Bcast(random_img, K, MPI_INT, root, MPI_COMM_WORLD);
     MPI_Bcast(cks, K, MPI_INT, root, MPI_COMM_WORLD);
-
 
     // Create a part of the classifiers
     int div = NUM_CLASSIFIERS / world_size;
@@ -413,20 +472,9 @@ int main (int argc, char* argv[]) {
         classifiers_w2[i] = 0;
     }
 
+    std::cout << "before train mpi" << std::endl;
+
     train_model_mpi(K, random_img, cks, classifiers_w1, classifiers_w2, rank, world_size, classifiers_size, filters);
-
-    if (rank == root) {
-        for (int i = 0; i < 100; i++){
-            std::cout << classifiers_w1[i] << " ";
-        }
-        std::cout << std::endl;
-
-        std::cout << std::endl;
-        for (int i = 0; i < 100; i++) {
-            std::cout << classifiers_w2[i] << " ";
-        } 
-        std::cout << std::endl;
-    }
 
     std::cout << "end of train model... before gather" << std::endl;
 
@@ -439,8 +487,22 @@ int main (int argc, char* argv[]) {
 
     std::chrono::duration<double> elapsed_training = finish_training - start_training;
     
-    if (rank == root)
+    if (rank == root) {
         std::cout << "Elapsed Time (Training): " << elapsed_training.count() << std::endl;
+        ofstream myfile;
+		myfile.open ("global_classifier_w1_small_200.txt");
+		for (int i = 0; i < NUM_CLASSIFIERS; i++){
+			myfile << global_classifier_w1[i] << "\n";
+		}
+		myfile.close();
+
+        ofstream myfile2;
+        myfile2.open ("global_classifier_w2_small_200.txt");
+		for (int i = 0; i < NUM_CLASSIFIERS; i++){
+			myfile2 << global_classifier_w2[i] << "\n";
+		}
+		myfile2.close();
+    }
 
     // Ex 2.2
 
@@ -451,7 +513,7 @@ int main (int argc, char* argv[]) {
     double* final_classifier_w2;
     int NUM_STRONG_FEATURES = 200; // TODO: find out
     std::vector<double> alfa;
-
+    std::vector<int> strong_features_indices;
     
     final_classifier_w1 = new double[NUM_CLASSIFIERS]; // the defeult value is already 0 for all positions
     final_classifier_w2 = new double[NUM_CLASSIFIERS];
@@ -462,7 +524,7 @@ int main (int argc, char* argv[]) {
     std::cout << "broadcast of global_classifier done correctly!" << std::endl;
  
     boosting_classifiers(global_classifier_w1, global_classifier_w2 ,filters, 
-    	final_classifier_w1, final_classifier_w2, rank, world_size, classifiers_size, alfa, NUM_STRONG_FEATURES);
+    	final_classifier_w1, final_classifier_w2, rank, world_size, classifiers_size, alfa, strong_features_indices, NUM_STRONG_FEATURES);
 
     auto finish_boosting = std::chrono::high_resolution_clock::now();
 
@@ -480,21 +542,27 @@ int main (int argc, char* argv[]) {
     if(rank == root){
 
     	ofstream myfile;
-		myfile.open ("final_classifier_w1.txt");
+		myfile.open ("final_classifier_w1_small_200.txt");
 		for (int i = 0; i < NUM_CLASSIFIERS; i++){
 			myfile << final_classifier_w1[i] << "\n";
 		}
 		myfile.close();
 
-		myfile.open ("final_classifier_w2.txt");
+		myfile.open ("final_classifier_w2_small_200.txt");
 		for (int i = 0; i < NUM_CLASSIFIERS; i++){
 			myfile << final_classifier_w2[i] << "\n";
 		}
 		myfile.close();
 
-        myfile.open("alpha.txt");
+        myfile.open("alpha_small_200.txt");
         for (int i = 0; i < NUM_STRONG_FEATURES; i++){
 			myfile << alfa[i] << "\n";
+		}
+		myfile.close();
+
+        myfile.open("indices_final_classifier_small_200.txt");
+        for (int i = 0; i < NUM_STRONG_FEATURES; i++){
+			myfile << strong_features_indices[i] << "\n";
 		}
 		myfile.close();
 
@@ -503,6 +571,7 @@ int main (int argc, char* argv[]) {
     delete[] final_classifier_w1;
     delete[] final_classifier_w2;
     alfa.clear();
+    strong_features_indices.clear();
 
     MPI_Finalize();
 
